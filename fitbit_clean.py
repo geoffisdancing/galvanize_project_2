@@ -126,7 +126,7 @@ def load_clean_custom(disease_var, days_drop_if_less=180, observation_window=59)
     x_train = x_train.values[:,:,None]
     x_test = x_test.values[:,:,None]
 
-    return x_train, x_test, y_train, y_test, union_med, X_disease_model_arr
+    return x_train, x_test, y_train, y_test, union_med, X_disease_model_arr, Y
 
 
 
@@ -246,7 +246,7 @@ def fitbit_multilayer_rnn():
 if __name__ == '__main__':
     #x_train, x_test, y_train, y_test = load_clean_CAD() #creating x_train test split for CAD
     #x_train, x_test, y_train, y_test = load_clean_HF() #creating x_train test split for HF
-    x_train, x_test, y_train, y_test, union_med, X_disease_model_arr = load_clean_custom('hbp') #creating x_train test split for 'disease'
+    x_train, x_test, y_train, y_test, union_med, X_disease_model_arr, Y = load_clean_custom('hbp') #creating x_train test split for 'disease'
 
     rnn_model_1l = fitbit_onelayer_rnn()
     rnn_model_1l.fit(x_train, y_train, nb_epoch=100, batch_size=10) #fit model to x_train and Y_train
