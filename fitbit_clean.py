@@ -1,21 +1,21 @@
-import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
-import seaborn
 from datetime import timedelta
 import random
 
+import pandas as pd
+import numpy as np
 from keras.datasets import imdb
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, Dropout
 from keras.layers import LSTM
 from keras.layers.embeddings import Embedding
 from keras.preprocessing import sequence
+from keras.callbacks import ModelCheckpoint
 from sklearn.cross_validation import train_test_split
 
 '''
 filepath to workign directory:
-cd Data\ Files/2014-/Research/HeH/HeH\ Partners/Fitbit\ Analysis/Fitbit\ Data\ Analysis/160801\ Galvanize\ Data/
+cd /../../Data\ Files/2014-/Research/HeH/HeH\ Partners/Fitbit\ Analysis/Fitbit\ Data\ Analysis/160801\ Galvanize\ Data/
 '''
 
 
@@ -44,7 +44,7 @@ def load_clean_custom(disease_var, days_drop_if_less=180, observation_window=59)
     '''
 
     #load fitbit data
-    fit = pd.read_table('meas_fitbit_tracker.txt', sep='|', parse_dates=[1])
+    fit = pd.read_table('data/meas_fitbit_tracker.txt', sep='|', parse_dates=[1])
     fit['date']=pd.to_datetime(fit['date'], format='%m/%d/%Y') #convert fitbit date to datetime
     fit = fit.drop(['distance', 'calories', 'floors', 'elevation'], axis=1)
     fit['steps_zero'] = fit.steps
@@ -72,7 +72,7 @@ def load_clean_custom(disease_var, days_drop_if_less=180, observation_window=59)
     fit_clean.steps.fillna(0, inplace=True) #replace NaN steps with 0 for neural network
 
     #read med_cond into df and create a mini df with only desired columns
-    med_cond = pd.read_table('surv_medical_conditions.txt', sep='|')
+    med_cond = pd.read_table('data/surv_medical_conditions.txt', sep='|')
     mini_med_cond = med_cond[['user_id', 'hbp', 'high_chol', 'diabetes', 'blockages_in_your_coronary', 'heart_attack', 'pvd', 'clots', 'chf', 'stroke', 'enlarged', 'afib', 'arrhythmia', 'murmur', 'valve', 'congenital' ,'pulm_hyper', 'aorta', 'sleep_apnea', 'copd', 'asthma', 'arrhythmia1', 'arrhythmia2']]
 
     # now create a column that combines "heart attack" or "blockages in your coronary"
@@ -206,6 +206,15 @@ def fitbit_multilayer_rnn():
     pred = Dense(1, activation='sigmoid')(lstm)
     two_model = Model(input=r_input, output=pred)
     two_model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    # set up to checkpoint model if its performance improves
+    filepath='weights.best.hdf5'
+    checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    callbacks_list = [checkpoint]
+
+
+
+
     print "Multi-layer RNN model"
     print two_model.summary()
     return two_model
@@ -249,7 +258,7 @@ if __name__ == '__main__':
     x_train, x_test, y_train, y_test, union_med, X_disease_model_arr, Y = load_clean_custom('hbp') #creating x_train test split for 'disease'
 
     rnn_model_1l = fitbit_onelayer_rnn()
-    rnn_model_1l.fit(x_train, y_train, nb_epoch=100, batch_size=10) #fit model to x_train and Y_train
+    rnn_model_1l.fit(x_train, y_train, nb_epoch=100, batch_size=10, callbacks=callbacks_list) #fit model to x_train and Y_train
     # print "One-layer-RNN model test peformance: "
     # rnn_model_1l.evaluate(x_test, y_test)
     rnn_model_multi = fitbit_multilayer_rnn()
